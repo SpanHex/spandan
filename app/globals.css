@@ -1,0 +1,332 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 255, 255, 255;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom Comic & Graphic Novel CSS Utilities */
+
+@keyframes noise {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  10% {
+    transform: translate(-1%, -2%);
+  }
+
+  20% {
+    transform: translate(-3%, 1%);
+  }
+
+  30% {
+    transform: translate(-2%, -3%);
+  }
+
+  40% {
+    transform: translate(1%, 3%);
+  }
+
+  50% {
+    transform: translate(-3%, 2%);
+  }
+
+  60% {
+    transform: translate(2%, 0%);
+  }
+
+  70% {
+    transform: translate(0%, 2%);
+  }
+
+  80% {
+    transform: translate(1%, 3%);
+  }
+
+  90% {
+    transform: translate(-2%, 1%);
+  }
+}
+
+.noise-overlay::after {
+  content: "";
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  width: 200%;
+  height: 200%;
+  background: transparent url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.045"/%3E%3C/svg%3E') repeat;
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 9999;
+  animation: noise 6s steps(10) infinite;
+}
+
+.bg-halftone {
+  background-image: radial-gradient(rgba(230, 0, 18, 0.18) 1.5px, transparent 0);
+  background-size: 12px 12px;
+}
+
+.bg-halftone-yellow {
+  background-image: radial-gradient(rgba(255, 212, 0, 0.25) 1.5px, transparent 0);
+  background-size: 12px 12px;
+}
+
+.bg-halftone-white {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1.5px, transparent 0);
+  background-size: 12px 12px;
+}
+
+.bg-stripes {
+  background: repeating-linear-gradient(-45deg,
+      rgba(230, 0, 18, 0.08),
+      rgba(230, 0, 18, 0.08) 8px,
+      transparent 8px,
+      transparent 16px);
+}
+
+.bg-stripes-yellow {
+  background: repeating-linear-gradient(-45deg,
+      rgba(255, 212, 0, 0.15),
+      rgba(255, 212, 0, 0.15) 6px,
+      transparent 6px,
+      transparent 12px);
+}
+
+.clip-comic-card {
+  clip-path: polygon(0 0,
+      calc(100% - 24px) 0,
+      100% 24px,
+      100% 100%,
+      24px 100%,
+      0 calc(100% - 24px));
+}
+
+.clip-comic-badge {
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+}
+
+.clip-comic-button {
+  clip-path: polygon(0 0,
+      calc(100% - 12px) 0,
+      100% 12px,
+      100% 100%,
+      12px 100%,
+      0 calc(100% - 12px));
+}
+
+.clip-diagonal-left {
+  clip-path: polygon(0 0, 100% 8%, 100% 100%, 0 92%);
+}
+
+.clip-diagonal-right {
+  clip-path: polygon(0 8%, 100% 0, 100% 92%, 0 100%);
+}
+
+/* Comic shading and thick borders */
+.border-comic-thick {
+  border: 4px solid #000000;
+}
+
+.border-comic-red-thick {
+  border: 4px solid #E60012;
+}
+
+.shadow-comic-solid {
+  box-shadow: 8px 8px 0px #000000;
+}
+
+.shadow-comic-solid-red {
+  box-shadow: 8px 8px 0px #E60012;
+}
+
+.shadow-comic-solid-yellow {
+  box-shadow: 6px 6px 0px #FFD400;
+}
+
+.text-stroke-black {
+  -webkit-text-stroke: 2px #000000;
+}
+
+.text-stroke-white {
+  -webkit-text-stroke: 1.5px #FFFFFF;
+}
+
+.text-stroke-red {
+  -webkit-text-stroke: 2px #E60012;
+}
+
+@keyframes pulseHeight {
+  0% {
+    transform: scaleY(0.3);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scaleY(1.15);
+    opacity: 1;
+  }
+}
+
+.animate-pulse-height {
+  transform-origin: bottom;
+  animation: pulseHeight 1.2s infinite ease-in-out alternate;
+}
+
+@keyframes shudder {
+
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  10% {
+    transform: translate3d(-4px, 3px, 0) rotate(-0.5deg);
+  }
+
+  20% {
+    transform: translate3d(4px, -3px, 0) rotate(1deg);
+  }
+
+  30% {
+    transform: translate3d(-3px, -4px, 0) rotate(-1deg);
+  }
+
+  40% {
+    transform: translate3d(3px, 4px, 0) rotate(1deg);
+  }
+
+  50% {
+    transform: translate3d(-4px, 2px, 0) rotate(-0.5deg);
+  }
+
+  60% {
+    transform: translate3d(4px, 3px, 0) rotate(1deg);
+  }
+
+  70% {
+    transform: translate3d(-3px, -3px, 0) rotate(-1deg);
+  }
+
+  80% {
+    transform: translate3d(3px, 2px, 0) rotate(0.5deg);
+  }
+
+  90% {
+    transform: translate3d(-4px, 3px, 0) rotate(-1deg);
+  }
+}
+
+.animate-shudder {
+  animation: shudder 0.08s infinite;
+  will-change: transform;
+}
