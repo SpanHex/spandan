@@ -3,6 +3,7 @@ import dynamic from "next/dynamic"
 
 import Navbar from "../components/Navbar"
 import Hero from "../components/Hero"
+import ScrollVelocity from "../components/ScrollVelocity"
 import About from "../components/About"
 import Contact from "../components/Contact"
 
@@ -21,6 +22,18 @@ export default function Home() {
 
       {/* 1. HERO SECTION */}
       <Hero />
+
+      {/* SCROLL VELOCITY BIO DIVIDER */}
+      <div className="py-6 sm:py-10 bg-black text-white border-t-4 border-b-4 border-black overflow-hidden relative skew-y-[-2deg] my-8 sm:my-12 z-20 shadow-comic-solid-red">
+        <ScrollVelocity
+          texts={[
+            "SPANDAN UPAMANYU // CREATIVE DEVELOPER // 60 FPS INTERFACES // SWISS REBEL //",
+            "HEAVY-DUTY FRONTEND // STABLE ENGINE // BOLD GEOMETRY // NO TEMPLATES //"
+          ]}
+          velocity={60}
+          className="font-archivo font-black text-[clamp(1.75rem,5.5vw,3.75rem)] tracking-tighter uppercase text-white/90 select-none px-4"
+        />
+      </div>
 
       {/* 2. REDESIGNED WORKS / PORTFOLIO SECTION */}
       <Works />
