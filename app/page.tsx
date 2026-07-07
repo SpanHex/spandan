@@ -84,7 +84,7 @@ export default function Home() {
       <Navbar />
 
       {/* 1. HERO SECTION */}
-      <Hero />
+      <Hero start={!preloaderActive} />
 
       {/* SCROLL VELOCITY BIO DIVIDER */}
       {!preloaderActive && (

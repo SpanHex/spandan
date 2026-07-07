@@ -4,13 +4,14 @@ import React, { useEffect, useRef, useState } from "react"
 import { Terminal, Zap } from "lucide-react"
 import HeroSubtitle from "./HeroSubtitle"
 
-export default function Hero() {
+export default function Hero({ start = true }: { start?: boolean }) {
   const heroRef = useRef<HTMLDivElement>(null)
   const floatAnimRef = useRef<any>(null)
   const isHeroInView = useRef(false)
   const [slamComplete, setSlamComplete] = useState(false)
 
   useEffect(() => {
+    if (!start) return
     let activeAnimators: any[] = []
     let timeouts: NodeJS.Timeout[] = []
     let isCleanedUp = false
@@ -203,7 +204,7 @@ export default function Hero() {
         } catch (e) {}
       })
     }
-  }, [])
+  }, [start])
 
   return (
     <section
