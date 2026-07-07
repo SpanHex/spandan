@@ -1,8 +1,7 @@
 "use client"
 
 import React, { useEffect, useRef } from "react"
-import { ExternalLink, Github, Sparkles, AlertCircle, Play, Heart } from "lucide-react"
-import { animate, createTimeline, stagger, random } from "animejs"
+import { ExternalLink, Github, Sparkles, AlertCircle, Play } from "lucide-react"
 
 interface Project {
   id: string
@@ -66,89 +65,194 @@ export default function Works() {
   const sectionRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
   const cardsRef = useRef<(HTMLDivElement | null)[]>([])
+  
+  const animeRef = useRef<any>(null)
+  const polyAnimRef = useRef<any>(null)
+  const rafIds = useRef<{ [key: number]: number }>({})
+  const isWorksInView = useRef(false)
 
   useEffect(() => {
-    // 1. Initial Load / Staggered Entrance of Header
-    if (headerRef.current) {
-      animate(headerRef.current.querySelectorAll(".animate-header"), {
-        opacity: [0, 1],
-        translateX: [-50, 0],
-        rotate: [-3, -2],
-        delay: stagger(150),
-        duration: 800,
-        easing: "easeOutElastic(1, 0.6)",
+    let animators: any[] = []
+    let isCleanedUp = false
+    let observerCleanup: (() => void) | undefined
+
+    const initAnimations = async () => {
+      // Defer Below-The-Fold work by 1500ms + idle callback to prevent main-thread contention during Hero intro slam
+      await new Promise<void>((resolve) => {
+        const schedule = () => {
+          if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+            requestIdleCallback(() => resolve(), { timeout: 500 })
+          } else {
+            resolve()
+          }
+        }
+        setTimeout(schedule, 1500)
       })
+
+      if (isCleanedUp) return
+
+      const anime = await import("animejs")
+      animeRef.current = anime
+      const { animate, createTimeline, stagger, random } = anime
+
+      // 1. Initial Load / Staggered Entrance of Header
+      if (headerRef.current) {
+        const headerAnim = animate(headerRef.current.querySelectorAll(".animate-header"), {
+          opacity: [0, 1],
+          translateX: [-50, 0],
+          rotate: [-3, -2],
+          delay: stagger(150),
+          duration: 800,
+          easing: "easeOutElastic(1, 0.6)",
+        })
+        animators.push(headerAnim)
+      }
+
+      // 2. Background Polygons & Graphics Animation
+      const polyAnim = animate(".bg-decor-poly", {
+        translateX: () => random(-15, 15),
+        translateY: () => random(-15, 15),
+        rotate: () => random(-5, 5),
+        duration: () => random(3000, 5000),
+        direction: "alternate",
+        loop: true,
+        easing: "easeInOutSine",
+      })
+      polyAnimRef.current = polyAnim
+      animators.push(polyAnim)
+
+      // Initial check if offscreen
+      if (document.hidden || !isWorksInView.current) {
+        polyAnim.pause()
+      }
+
+      // 3. Scroll triggered reveal using Intersection Observer
+      const cardObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const cardEl = entry.target as HTMLElement
+              const index = cardEl.getAttribute("data-index")
+
+              const revealPanel = cardEl.querySelector(".reveal-flash-panel")
+              const cardInner = cardEl.querySelector(".card-inner")
+              const textReveal = cardEl.querySelectorAll(".animate-text-reveal")
+
+              if (revealPanel && cardInner) {
+                // Anime.js timeline for reveal sequence
+                const tl = createTimeline({
+                  defaults: {
+                    easing: "easeOutQuad"
+                  }
+                } as any)
+
+                // Red block flash behind (optimized using scaleX instead of width)
+                tl.add(revealPanel, {
+                  scaleX: [0, 1],
+                  duration: 400,
+                })
+                  // Reveal the card itself
+                  .add(cardInner, {
+                    opacity: [0, 1],
+                    scale: [0.95, 1],
+                    rotate: [index && parseInt(index) % 2 === 0 ? -1 : 1, index && parseInt(index) % 2 === 0 ? -1.5 : 1.5],
+                    duration: 500,
+                  }, "-=200")
+                  // Retract the red flash block
+                  .add(revealPanel, {
+                    translateX: ["0%", "101%"],
+                    duration: 350,
+                  }, "-=300")
+
+                if (textReveal.length > 0) {
+                  // Stagger reveal text elements
+                  tl.add(textReveal, {
+                    opacity: [0, 1],
+                    translateY: [20, 0],
+                    delay: stagger(80),
+                    duration: 400,
+                  }, "-=200")
+                }
+              }
+
+              cardObserver.unobserve(cardEl)
+            }
+          })
+        },
+        { threshold: 0.15 }
+      )
+
+      cardsRef.current.forEach((card) => {
+        if (card) cardObserver.observe(card)
+      })
+
+      // Section-level observer to pause polygons when off-screen
+      const sectionObserver = new IntersectionObserver(
+        ([entry]) => {
+          isWorksInView.current = entry.isIntersecting
+          if (polyAnimRef.current) {
+            if (entry.isIntersecting && !document.hidden) {
+              polyAnimRef.current.play()
+            } else {
+              polyAnimRef.current.pause()
+            }
+          }
+        },
+        { threshold: 0 }
+      )
+
+      if (sectionRef.current) {
+        sectionObserver.observe(sectionRef.current)
+      }
+
+      // Cleanup function returned inside asynchronous dynamic import scope
+      return () => {
+        cardObserver.disconnect()
+        sectionObserver.disconnect()
+      }
     }
 
-    // 2. Background Polygons & Graphics Animation
-    animate(".bg-decor-poly", {
-      translateX: () => random(-15, 15),
-      translateY: () => random(-15, 15),
-      rotate: () => random(-5, 5),
-      duration: () => random(3000, 5000),
-      direction: "alternate",
-      loop: true,
-      easing: "easeInOutSine",
+    initAnimations().then((cleanup) => {
+      if (cleanup) observerCleanup = cleanup
     })
 
-    // 3. Scroll triggered reveal using Intersection Observer
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const cardEl = entry.target as HTMLElement
-            const index = cardEl.getAttribute("data-index")
-
-            // Anime.js timeline for reveal sequence
-            const tl = createTimeline({
-              easing: "easeOutQuad",
-            })
-
-            // Red block flash behind
-            tl.add(cardEl.querySelector(".reveal-flash-panel"), {
-              width: ["0%", "100%"],
-              duration: 400,
-            })
-              // Reveal the card itself
-              .add(cardEl.querySelector(".card-inner"), {
-                opacity: [0, 1],
-                scale: [0.95, 1],
-                rotate: [index && parseInt(index) % 2 === 0 ? -1 : 1, index && parseInt(index) % 2 === 0 ? -1.5 : 1.5],
-                duration: 500,
-              }, "-=200")
-              // Retract the red flash block (leaving a border or shifting background)
-              .add(cardEl.querySelector(".reveal-flash-panel"), {
-                translateX: ["0%", "101%"],
-                duration: 350,
-              }, "-=300")
-              // Stagger reveal text elements
-              .add(cardEl.querySelectorAll(".animate-text-reveal"), {
-                opacity: [0, 1],
-                translateY: [20, 0],
-                delay: stagger(80),
-                duration: 400,
-              }, "-=200")
-
-            observer.unobserve(cardEl)
-          }
-        })
-      },
-      { threshold: 0.15 }
-    )
-
-    cardsRef.current.forEach((card) => {
-      if (card) observer.observe(card)
-    })
+    // Document Visibility handler
+    const handleVisibilityChange = () => {
+      if (polyAnimRef.current) {
+        if (document.hidden) {
+          polyAnimRef.current.pause()
+        } else if (isWorksInView.current) {
+          polyAnimRef.current.play()
+        }
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
-      observer.disconnect()
+      isCleanedUp = true
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      if (observerCleanup) observerCleanup()
+      
+      // Stop all animations
+      animators.forEach((a) => {
+        try {
+          a.pause()
+        } catch (e) {}
+      })
+
+      // Clean up outstanding requestAnimationFrames
+      Object.values(rafIds.current).forEach((id) => cancelAnimationFrame(id))
     }
   }, [])
 
-  // Parallax cursor tracking on individual cards
+  // Parallax cursor tracking on individual cards (throttled with requestAnimationFrame)
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>, index: number) => {
     const card = cardsRef.current[index]
     if (!card) return
+
+    if (rafIds.current[index]) {
+      cancelAnimationFrame(rafIds.current[index])
+    }
 
     const rect = card.getBoundingClientRect()
     const x = e.clientX - rect.left
@@ -164,19 +268,25 @@ export default function Works() {
     const previewContent = card.querySelector(".preview-inner-layer") as HTMLElement
     const bgNumber = card.querySelector(".bg-project-num") as HTMLElement
 
-    if (innerCard) {
-      innerCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`
-    }
-    if (previewContent) {
-      // Parallax shifts inside the preview
-      previewContent.style.transform = `translate3d(${(x - centerX) * 0.05}px, ${(y - centerY) * 0.05}px, 20px)`
-    }
-    if (bgNumber) {
-      bgNumber.style.transform = `translate3d(${(x - centerX) * -0.08}px, ${(y - centerY) * -0.08}px, 0px)`
-    }
+    rafIds.current[index] = requestAnimationFrame(() => {
+      if (innerCard) {
+        innerCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`
+      }
+      if (previewContent) {
+        // Parallax shifts inside the preview
+        previewContent.style.transform = `translate3d(${(x - centerX) * 0.05}px, ${(y - centerY) * 0.05}px, 20px)`
+      }
+      if (bgNumber) {
+        bgNumber.style.transform = `translate3d(${(x - centerX) * -0.08}px, ${(y - centerY) * -0.08}px, 0px)`
+      }
+    })
   }
 
   const handleMouseLeave = (index: number) => {
+    if (rafIds.current[index]) {
+      cancelAnimationFrame(rafIds.current[index])
+    }
+
     const card = cardsRef.current[index]
     if (!card) return
 
@@ -184,31 +294,45 @@ export default function Works() {
     const previewContent = card.querySelector(".preview-inner-layer") as HTMLElement
     const bgNumber = card.querySelector(".bg-project-num") as HTMLElement
 
-    // Smoothly reset transformations
-    animate(innerCard, {
-      transform: [`perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`],
-      duration: 500,
-      easing: "easeOutCubic",
-    })
+    const anime = animeRef.current
+    if (anime) {
+      const { animate } = anime
+      // Smoothly reset transformations
+      animate(innerCard, {
+        transform: [`perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`],
+        duration: 500,
+        easing: "easeOutCubic",
+      })
 
-    animate(previewContent, {
-      transform: [`translate3d(0px, 0px, 0px)`],
-      duration: 500,
-      easing: "easeOutCubic",
-    })
+      animate(previewContent, {
+        transform: [`translate3d(0px, 0px, 0px)`],
+        duration: 500,
+        easing: "easeOutCubic",
+      })
 
-    animate(bgNumber, {
-      transform: [`translate3d(0px, 0px, 0px)`],
-      duration: 500,
-      easing: "easeOutCubic",
-    })
+      animate(bgNumber, {
+        transform: [`translate3d(0px, 0px, 0px)`],
+        duration: 500,
+        easing: "easeOutCubic",
+      })
+    } else {
+      if (innerCard) {
+        innerCard.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)"
+      }
+      if (previewContent) {
+        previewContent.style.transform = "translate3d(0px, 0px, 0px)"
+      }
+      if (bgNumber) {
+        bgNumber.style.transform = "translate3d(0px, 0px, 0px)"
+      }
+    }
   }
 
   return (
     <section
       id="work"
       ref={sectionRef}
-      className="relative py-28 px-4 md:px-8 bg-black overflow-hidden noise-overlay min-h-screen border-t border-b border-comic-red-thick"
+      className="relative py-16 sm:py-24 lg:py-28 px-4 md:px-8 bg-black overflow-hidden noise-overlay min-h-screen border-t border-b border-comic-red-thick"
     >
       {/* 1. GRAPHIC BACKGROUND DECORATIONS */}
       <div className="absolute inset-0 pointer-events-none select-none z-0">
@@ -219,7 +343,6 @@ export default function Works() {
         {/* Large abstract red polygons */}
         <div className="bg-decor-poly absolute top-12 left-10 w-96 h-96 bg-comic-red opacity-10 blur-2xl rounded-full"></div>
         <div className="bg-decor-poly absolute bottom-20 right-10 w-[500px] h-[500px] bg-comic-red opacity-5 blur-3xl rounded-full"></div>
-
 
         {/* Diagonal slashing background elements */}
         <svg className="absolute top-1/4 left-0 w-full h-24 text-comic-red/10 opacity-30" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -236,26 +359,26 @@ export default function Works() {
 
       <div className="container mx-auto relative z-10">
         {/* 2. SECTION HEADER */}
-        <div ref={headerRef} className="mb-24 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative">
+        <div ref={headerRef} className="mb-16 sm:mb-24 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative">
           <div className="relative">
             {/* Giant Outlined background text */}
-            <span className="absolute -top-16 -left-8 text-8xl md:text-9xl font-archivo font-black text-transparent text-stroke-red opacity-10 select-none pointer-events-none tracking-widest uppercase">
+            <span className="absolute -top-16 -left-4 sm:-left-8 text-[clamp(4.5rem,14vw,8rem)] md:text-9xl font-archivo font-black text-transparent text-stroke-red opacity-10 select-none pointer-events-none tracking-widest uppercase">
               REBELS
             </span>
-            <div className="animate-header inline-block bg-comic-red text-black text-6xl md:text-7xl lg:text-8xl font-bebas px-6 py-2 border-comic-thick shadow-comic-solid-yellow -rotate-2 transform tracking-tight">
+            <div className="animate-header inline-block bg-comic-red text-black text-[clamp(2.5rem,10vw,4.5rem)] sm:text-6xl md:text-7xl lg:text-8xl font-bebas px-4 py-1.5 sm:px-6 sm:py-2 border-comic-thick shadow-comic-solid-yellow -rotate-2 transform tracking-tight opacity-0">
               WORKS // PORTFOLIO
             </div>
-            <div className="animate-header mt-4 text-comic-yellow font-barlow text-lg md:text-xl font-extrabold uppercase tracking-widest pl-2">
+            <div className="animate-header mt-4 text-comic-yellow font-barlow text-base sm:text-lg md:text-xl font-extrabold uppercase tracking-widest pl-2 opacity-0">
               [ STAGE 01: SELECT MISSIONS ]
             </div>
           </div>
-          <p className="animate-header max-w-md font-barlow font-bold text-neutral-400 text-sm md:text-base border-l-4 border-comic-red pl-4 py-1">
+          <p className="animate-header max-w-md font-barlow font-bold text-neutral-400 text-sm md:text-base border-l-4 border-comic-red pl-4 py-1 opacity-0">
             Redesigned into a high-energy interactive experience. Hit the live links to infiltrate the active sites.
           </p>
         </div>
 
         {/* 3. SHOWCASE CARDS */}
-        <div className="space-y-36">
+        <div className="space-y-24 sm:space-y-36">
           {projects.map((project, index) => {
             const isEven = index % 2 === 0
             const cardRotation = isEven ? "-rotate-[1.5deg]" : "rotate-[1.5deg]"
@@ -264,21 +387,21 @@ export default function Works() {
               <div
                 key={project.id}
                 ref={(el) => {
-                  cardsRef.current[index] = el;
+                  cardsRef.current[index] = el
                 }}
                 data-index={index}
-                className="relative grid grid-cols-12 gap-8 items-center"
+                className="relative grid grid-cols-12 gap-8 items-center overflow-hidden"
                 onMouseMove={(e) => handleMouseMove(e, index)}
                 onMouseLeave={() => handleMouseLeave(index)}
               >
                 {/* Reveal transition panel overlay */}
-                <div className="reveal-flash-panel absolute inset-0 bg-comic-red z-20 pointer-events-none w-0"></div>
+                <div className="reveal-flash-panel absolute inset-0 bg-comic-red z-20 pointer-events-none w-full scale-x-0 origin-left"></div>
 
                 {/* PROJECT LAYOUT WRAPPER */}
                 {/* PREVIEW CONTAINER - Alternate Column order */}
                 <div
                   className={`col-span-12 lg:col-span-6 xl:col-span-7 ${isEven ? "lg:order-1" : "lg:order-2"
-                    } w-full h-[320px] md:h-[420px] relative`}
+                    } w-full h-[220px] xs:h-[280px] sm:h-[360px] md:h-[420px] relative`}
                 >
                   {/* Outer Layer: Angled Border & Card Wrapper */}
                   <div
@@ -292,24 +415,24 @@ export default function Works() {
 
                       {/* PREVIEW TYPE: SOUNDWAVE */}
                       {project.previewType === "soundwave" && (
-                        <div className="w-full h-full bg-black relative overflow-hidden flex flex-col justify-between p-6">
+                        <div className="w-full h-full bg-black relative overflow-hidden flex flex-col justify-between p-4 sm:p-6">
                           {/* Halftone texture */}
                           <div className="absolute inset-0 bg-halftone opacity-30"></div>
                           {/* Radial overlay */}
                           <div className="absolute inset-0 bg-gradient-to-t from-comic-red/40 via-transparent to-transparent"></div>
 
                           {/* Top UI stats */}
-                          <div className="flex justify-between items-center text-xs font-barlow text-white/50 z-10">
+                          <div className="flex justify-between items-center text-[10px] sm:text-xs font-barlow text-white/50 z-10">
                             <span className="flex items-center gap-1.5"><Play size={10} className="text-comic-red fill-current" /> AUDIO ENGINE ACTIVE</span>
                             <span>FREQ: 44.1 KHZ</span>
                           </div>
 
                           {/* Sound wave graphics */}
-                          <div className="h-40 flex items-end justify-center gap-1 w-full px-4 z-10">
+                          <div className="h-28 sm:h-40 flex items-end justify-center gap-0.5 sm:gap-1 w-full px-2 sm:px-4 z-10">
                             {[25, 45, 65, 35, 90, 80, 50, 75, 40, 95, 30, 70, 85, 60, 45, 80, 90, 35, 65, 50, 75, 95, 40, 60, 85, 20].map((h, i) => (
                               <div
                                 key={i}
-                                className="w-[3px] bg-comic-red opacity-80 rounded-t-sm animate-pulse-height"
+                                className="flex-1 max-w-[4px] min-w-[1px] bg-comic-red opacity-80 rounded-t-sm animate-pulse-height will-change-transform"
                                 style={{
                                   height: `${h}%`,
                                   animationDelay: `${(i % 5) * 0.15}s`,
@@ -322,38 +445,38 @@ export default function Works() {
                           {/* Bottom UI details */}
                           <div className="flex justify-between items-center z-10">
                             <div className="flex items-center gap-2">
-                              <div className="w-2.5 h-2.5 rounded-full bg-comic-red animate-ping" />
-                              <span className="text-sm font-barlow font-extrabold tracking-widest text-comic-red">BEAT TRACKER</span>
+                              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-comic-red animate-ping" />
+                              <span className="text-xs sm:text-sm font-barlow font-extrabold tracking-widest text-comic-red">BEAT TRACKER</span>
                             </div>
-                            <span className="text-[10px] text-white/40 border border-white/20 px-2 py-0.5">DB Lvl: -3.2</span>
+                            <span className="text-[9px] sm:text-[10px] text-white/40 border border-white/20 px-2 py-0.5">DB Lvl: -3.2</span>
                           </div>
                         </div>
                       )}
 
                       {/* PREVIEW TYPE: TERMINAL */}
                       {project.previewType === "terminal" && (
-                        <div className="w-full h-full bg-[#0a0a0a] relative overflow-hidden flex flex-col p-6 font-mono text-xs text-green-400">
+                        <div className="w-full h-full bg-[#0a0a0a] relative overflow-hidden flex flex-col p-4 sm:p-6 font-mono text-[10px] sm:text-xs text-green-400">
                           {/* CRT Screen scanlines */}
                           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[size:100%_4px,3px_100%] pointer-events-none z-20"></div>
 
-                          <div className="flex justify-between items-center text-[10px] text-yellow-400 border-b border-green-950 pb-2 mb-3">
+                          <div className="flex justify-between items-center text-[9px] sm:text-[10px] text-yellow-400 border-b border-green-950 pb-2 mb-3">
                             <span>SESSION: FORSAKEN_ROOT</span>
                             <span className="text-comic-red animate-pulse flex items-center gap-1"><AlertCircle size={10} /> SECURITY WARNING</span>
                           </div>
 
-                          <div className="flex-1 flex flex-col justify-start space-y-1 overflow-hidden font-mono select-none">
-                            <p className="text-white">&gt;_ INITIATING FORSAKEN DECRYPTER...</p>
+                          <div className="flex-1 flex flex-col justify-start space-y-1 overflow-hidden font-mono select-none text-[9px] sm:text-xs">
+                            <p className="text-white">&gt;_ INITIATING DECRYPTER...</p>
                             <p className="text-neutral-500">LOAD_MODULE: CORE_SHADERS [OK]</p>
                             <p className="text-neutral-500">GLSL_SETUP: COMPILED_24_VARIANTS</p>
                             <p className="text-green-500">&gt; SEARCHING DATABASE KEYS...</p>
-                            <p className="text-yellow-400 text-[10px] pl-4"># KEY_01: SPANDAN_SECURE_AUTH [PASSED]</p>
-                            <p className="text-yellow-400 text-[10px] pl-4"># KEY_02: FORSAKEN_CORE_ACCESS [GRANTED]</p>
+                            <p className="text-yellow-400 text-[9px] sm:text-[10px] pl-2 sm:pl-4"># KEY_01: SPANDAN_SECURE_AUTH [PASSED]</p>
+                            <p className="text-yellow-400 text-[9px] sm:text-[10px] pl-2 sm:pl-4"># KEY_02: FORSAKEN_CORE_ACCESS [GRANTED]</p>
                             <p className="text-neutral-400 font-bold mt-2 animate-pulse">&gt; LOADING ENCRYPTED LOGS [88.94% completed]</p>
                           </div>
 
                           {/* SVG terminal decoration */}
                           <div className="absolute bottom-4 right-4 opacity-15">
-                            <svg width="60" height="60" viewBox="0 0 100 100" fill="none" stroke="#FFD400" strokeWidth="2">
+                            <svg width="40" height="40" className="sm:w-[60px] sm:h-[60px]" viewBox="0 0 100 100" fill="none" stroke="#FFD400" strokeWidth="2">
                               <path d="M10,10 L90,10 L90,90 L10,90 Z" strokeDasharray="5 5" />
                               <circle cx="50" cy="50" r="30" />
                               <path d="M50,10 L50,90" />
@@ -365,13 +488,13 @@ export default function Works() {
 
                       {/* PREVIEW TYPE: SCHEMATIC */}
                       {project.previewType === "schematic" && (
-                        <div className="w-full h-full bg-[#111111] relative overflow-hidden flex items-center justify-center p-6 text-white/50 border border-white/5">
+                        <div className="w-full h-full bg-[#111111] relative overflow-hidden flex items-center justify-center p-4 sm:p-6 text-white/50 border border-white/5">
                           {/* Blueprint Grid */}
                           <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] opacity-70"></div>
 
                           {/* SVG rotating mechanical blueprint gears */}
                           <div className="absolute inset-0 z-0 flex items-center justify-center">
-                            <svg width="240" height="240" viewBox="0 0 100 100" fill="none" stroke="#E60012" strokeWidth="1" className="opacity-25 animate-[spin_20s_linear_infinite]">
+                            <svg viewBox="0 0 100 100" fill="none" stroke="#E60012" strokeWidth="1" className="w-32 h-32 xs:w-44 xs:h-44 sm:w-56 sm:h-56 opacity-25 animate-[spin_20s_linear_infinite] will-change-transform" style={{ width: '100%', height: '100%', maxWidth: '240px', maxHeight: '240px' }}>
                               <circle cx="50" cy="50" r="40" strokeDasharray="3 3" />
                               <circle cx="50" cy="50" r="25" />
                               <path d="M50,5 L50,95 M5,50 L95,50" />
@@ -384,7 +507,7 @@ export default function Works() {
                                 />
                               ))}
                             </svg>
-                            <svg width="120" height="120" viewBox="0 0 100 100" fill="none" stroke="#FFD400" strokeWidth="1.5" className="absolute top-10 left-10 opacity-20 animate-[spin_10s_linear_infinite_reverse]">
+                            <svg viewBox="0 0 100 100" fill="none" stroke="#FFD400" strokeWidth="1.5" className="absolute top-4 left-4 xs:top-10 xs:left-10 w-16 h-16 xs:w-24 xs:h-24 opacity-20 animate-[spin_10s_linear_infinite_reverse] will-change-transform" style={{ width: '100%', height: '100%', maxWidth: '120px', maxHeight: '120px' }}>
                               <circle cx="50" cy="50" r="35" />
                               <path d="M50,50 L50,5 M5,50 L95,50" transform="rotate(45 50 50)" />
                             </svg>
@@ -397,19 +520,19 @@ export default function Works() {
                           </div>
 
                           <div className="z-10 relative flex flex-col items-center">
-                            <div className="w-16 h-16 border-2 border-dashed border-comic-red rounded-full flex items-center justify-center animate-[spin_15s_linear_infinite]">
-                              <div className="w-8 h-8 border border-comic-yellow flex items-center justify-center">
-                                <div className="w-2 h-2 bg-comic-red" />
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 border-2 border-dashed border-comic-red rounded-full flex items-center justify-center animate-[spin_15s_linear_infinite] will-change-transform">
+                              <div className="w-6 h-6 sm:w-8 sm:h-8 border border-comic-yellow flex items-center justify-center">
+                                <div className="w-1.5 h-1.5 bg-comic-red" />
                               </div>
                             </div>
-                            <span className="mt-4 font-bebas text-sm tracking-widest text-white">ENGINEERING GRID SCHEMATIC v3.0</span>
+                            <span className="mt-4 font-bebas text-xs sm:text-sm tracking-widest text-white text-center">ENGINEERING GRID SCHEMATIC v3.0</span>
                           </div>
                         </div>
                       )}
 
                       {/* PREVIEW TYPE: FASHION */}
                       {project.previewType === "fashion" && (
-                        <div className="w-full h-full bg-[#050505] relative overflow-hidden flex items-center justify-center p-6">
+                        <div className="w-full h-full bg-[#050505] relative overflow-hidden flex items-center justify-center p-4 sm:p-6">
                           {/* Halftone texture */}
                           <div className="absolute inset-0 bg-halftone-yellow opacity-20"></div>
 
@@ -420,9 +543,9 @@ export default function Works() {
                           </div>
 
                           <div className="relative z-10 flex flex-col items-center text-center">
-                            {/* SVG Makeup/Beauty vector logo concept outline */}
-                            <div className="relative w-20 h-20 mb-4 flex items-center justify-center">
-                              <svg width="80" height="80" viewBox="0 0 100 100" fill="none" stroke="#FFFFFF" strokeWidth="2" className="drop-shadow-[0_0_8px_rgba(255,212,0,0.6)]">
+                            {/* SVG Makeup/Beauty concept outline */}
+                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 mb-4 flex items-center justify-center">
+                              <svg width="64" height="64" className="sm:w-20 sm:h-20" viewBox="0 0 100 100" fill="none" stroke="#FFFFFF" strokeWidth="2" className="drop-shadow-[0_0_8px_rgba(255,212,0,0.6)]">
                                 <circle cx="50" cy="50" r="30" />
                                 <path d="M50,10 L50,90" stroke="#FFD400" />
                                 <path d="M20,35 L80,35" stroke="#E60012" strokeWidth="3" />
@@ -430,10 +553,10 @@ export default function Works() {
                               </svg>
                             </div>
 
-                            <h4 className="font-bebas text-3xl tracking-wide text-white">
+                            <h4 className="font-bebas text-2xl sm:text-3xl tracking-wide text-white">
                               BL BEAUTY <span className="text-comic-yellow">ALPHA</span>
                             </h4>
-                            <p className="font-barlow text-xs text-white/50 tracking-widest mt-2 uppercase">
+                            <p className="font-barlow text-[10px] sm:text-xs text-white/50 tracking-widest mt-2 uppercase">
                               // PREMIUM FASHION - TECH
                             </p>
                           </div>
@@ -450,7 +573,7 @@ export default function Works() {
                     } flex flex-col justify-center relative`}
                 >
                   {/* 4. LARGE OUTLINED PROJECT NUMBER */}
-                  <span className="bg-project-num absolute -top-24 right-4 md:-top-32 md:-right-8 text-[12rem] md:text-[16rem] font-archivo font-black text-transparent text-stroke-white opacity-[0.04] select-none pointer-events-none tracking-tighter transition-transform duration-300 ease-out z-0">
+                  <span className="bg-project-num absolute -top-16 right-2 xs:-top-24 xs:right-4 md:-top-32 md:-right-8 text-[clamp(6rem,25vw,12rem)] md:text-[16rem] font-archivo font-black text-transparent text-stroke-white opacity-[0.04] select-none pointer-events-none tracking-tighter transition-transform duration-300 ease-out z-0">
                     {project.id}
                   </span>
 
@@ -465,7 +588,7 @@ export default function Works() {
                     </div>
 
                     {/* Project Title */}
-                    <h3 className="animate-text-reveal text-4xl md:text-5xl lg:text-6xl font-archivo font-extrabold tracking-tighter text-white mb-4 -rotate-[1deg] origin-left drop-shadow-[4px_4px_0px_#000000] opacity-0">
+                    <h3 className="animate-text-reveal text-[clamp(1.75rem,8vw,3.5rem)] md:text-5xl lg:text-6xl font-archivo font-extrabold tracking-tighter text-white mb-4 -rotate-[1deg] origin-left drop-shadow-[clamp(2px,0.5vw,4px)_clamp(2px,0.5vw,4px)_0px_#000000] opacity-0">
                       {project.title}
                     </h3>
 
@@ -478,8 +601,8 @@ export default function Works() {
                     <div className="animate-text-reveal flex flex-wrap gap-2 mb-8 opacity-0">
                       {project.tech.map((t, i) => (
                         <span
-                          key={i}
-                          className="bg-comic-dark text-white font-mono text-[10px] md:text-xs px-3 py-1 border border-white/10 hover:border-comic-yellow hover:text-comic-yellow transition-colors duration-150"
+                           key={i}
+                           className="bg-comic-dark text-white font-mono text-[10px] md:text-xs px-3 py-1 border border-white/10 hover:border-comic-yellow hover:text-comic-yellow transition-colors duration-150"
                         >
                           {t}
                         </span>
@@ -487,13 +610,13 @@ export default function Works() {
                     </div>
 
                     {/* Buttons */}
-                    <div className="animate-text-reveal flex flex-wrap gap-4 items-center opacity-0">
+                    <div className="animate-text-reveal flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center opacity-0">
                       {/* Live Link Button */}
                       <a
                         href={project.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="group/btn inline-flex items-center gap-2 relative bg-comic-red hover:bg-comic-yellow text-black hover:text-black font-bebas text-lg tracking-wider px-6 py-2.5 border-comic-thick shadow-comic-solid transition-all duration-200 hover:translate-y-[-2px] hover:translate-x-[-2px] hover:shadow-[10px_10px_0px_#000000] active:translate-y-[2px] active:translate-x-[2px] active:shadow-[4px_4px_0px_#000000] clip-comic-button font-bold"
+                        className="group/btn inline-flex items-center justify-center gap-2 relative bg-comic-red hover:bg-comic-yellow text-black hover:text-black font-bebas text-lg tracking-wider px-6 py-2.5 border-comic-thick shadow-comic-solid transition-all duration-200 hover:translate-y-[-2px] hover:translate-x-[-2px] hover:shadow-[10px_10px_0px_#000000] active:translate-y-[2px] active:translate-x-[2px] active:shadow-[4px_4px_0px_#000000] clip-comic-button font-bold min-h-[44px]"
                       >
                         <ExternalLink size={16} className="group-hover/btn:rotate-12 transition-transform duration-200" />
                         ACCESS MISSION
@@ -505,7 +628,7 @@ export default function Works() {
                           href={project.github}
                           target="_blank"
                           rel="noreferrer"
-                          className="group/btn inline-flex items-center gap-2 relative bg-white hover:bg-comic-yellow text-black font-bebas text-lg tracking-wider px-6 py-2.5 border-comic-thick shadow-comic-solid transition-all duration-200 hover:translate-y-[-2px] hover:translate-x-[-2px] hover:shadow-[10px_10px_0px_#000000] active:translate-y-[2px] active:translate-x-[2px] active:shadow-[4px_4px_0px_#000000] clip-comic-button font-bold"
+                          className="group/btn inline-flex items-center justify-center gap-2 relative bg-white hover:bg-comic-yellow text-black font-bebas text-lg tracking-wider px-6 py-2.5 border-comic-thick shadow-comic-solid transition-all duration-200 hover:translate-y-[-2px] hover:translate-x-[-2px] hover:shadow-[10px_10px_0px_#000000] active:translate-y-[2px] active:translate-x-[2px] active:shadow-[4px_4px_0px_#000000] clip-comic-button font-bold min-h-[44px]"
                         >
                           <Github size={16} className="group-hover/btn:scale-110 transition-transform duration-200" />
                           INSPECT CODE
@@ -521,9 +644,9 @@ export default function Works() {
         </div>
 
         {/* 6. EDITORIAL FOOTER DECORATION */}
-        <div className="mt-40 border-t-8 border-double border-white/20 pt-10 flex flex-col md:flex-row justify-between items-center gap-6 text-neutral-500 font-barlow text-sm font-extrabold uppercase tracking-widest z-10 relative">
-          <div className="flex items-center gap-3">
-            <Sparkles size={16} className="text-comic-red" />
+        <div className="mt-24 sm:mt-40 border-t-8 border-double border-white/20 pt-10 flex flex-col md:flex-row justify-between items-center gap-6 text-neutral-500 font-barlow text-sm font-extrabold uppercase tracking-widest z-10 relative">
+          <div className="flex items-center gap-3 text-center">
+            <Sparkles size={16} className="text-comic-red flex-shrink-0" />
             <span>[ SYSTEM PORTFOLIO INTERFACE REDESIGNED: STAGE 01 VERIFIED ]</span>
           </div>
           <div className="flex items-center gap-2">
