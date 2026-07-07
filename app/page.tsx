@@ -1,22 +1,15 @@
 "use client"
 
 import React, { useState } from "react"
-import dynamic from "next/dynamic"
 
 import Navbar from "../components/Navbar"
 import Hero from "../components/Hero"
 import ScrollVelocity from "../components/ScrollVelocity"
 import FlowingMenu from "../components/FlowingMenu"
 import Preloader from "../components/Preloader"
+import Works from "../components/Works"
 import About from "../components/About"
 import Contact from "../components/Contact"
-
-// Dynamically import below-the-fold interactive works section
-
-const Works = dynamic(() => import("../components/Works"), {
-  ssr: true,
-  loading: () => <div className="min-h-screen bg-black" />,
-})
 
 const flowingMenuItems = [
   {
