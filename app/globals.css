@@ -358,3 +358,40 @@ body {
 .animate-nav-slide-down {
   animation: navSlideDown 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
+/* Custom Interactive Cursor Styling */
+@media (pointer: fine) {
+  html {
+    cursor: none;
+  }
+  
+  #ios-cursor {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1.5px solid rgba(255, 255, 255, 0.8);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: width 0.2s cubic-bezier(0.25, 1, 0.5, 1), height 0.2s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.25s ease, border-color 0.25s ease;
+    z-index: 9999;
+    mix-blend-mode: difference;
+    left: -100px;
+    top: -100px;
+    will-change: left, top;
+  }
+
+  #ios-cursor.cursor-hover {
+    width: 60px;
+    height: 60px;
+    background-color: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 1);
+  }
+}
+
+@media (pointer: coarse) {
+  #ios-cursor {
+    display: none !important;
+  }
+}

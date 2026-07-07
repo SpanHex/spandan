@@ -7,6 +7,7 @@ import Hero from "../components/Hero"
 import ScrollVelocity from "../components/ScrollVelocity"
 import FlowingMenu from "../components/FlowingMenu"
 import Preloader from "../components/Preloader"
+import CustomCursor from "../components/CustomCursor"
 import Works from "../components/Works"
 import About from "../components/About"
 import Contact from "../components/Contact"
@@ -72,6 +73,9 @@ export default function Home() {
     <main className="min-h-screen bg-white text-black overflow-hidden relative selection:bg-comic-yellow selection:text-black animate-page-fade-in">
       {/* 0. STARTUP PRELOADER */}
       <Preloader onComplete={() => setPreloaderActive(false)} />
+
+      {/* CUSTOM CURSOR */}
+      <CustomCursor />
 
       {/* Pinned Navigation */}
       <Navbar />
