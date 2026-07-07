@@ -4,6 +4,7 @@ import dynamic from "next/dynamic"
 import Navbar from "../components/Navbar"
 import Hero from "../components/Hero"
 import ScrollVelocity from "../components/ScrollVelocity"
+import FlowingMenu from "../components/FlowingMenu"
 import About from "../components/About"
 import Contact from "../components/Contact"
 
@@ -13,6 +14,60 @@ const Works = dynamic(() => import("../components/Works"), {
   ssr: true,
   loading: () => <div className="min-h-screen bg-black" />,
 })
+
+const flowingMenuItems = [
+  {
+    link: "#about",
+    text: "FRONTEND ARCHITECTURE",
+    marqueeBgColor: "#FFD400",
+    marqueeTextColor: "#000000",
+    image: (
+      <svg viewBox="0 0 100 100" fill="none" stroke="#FFD400" strokeWidth="4" className="w-10 h-10">
+        <rect x="10" y="10" width="80" height="80" strokeDasharray="4 4" />
+        <path d="M35,30 L20,30 L20,70 L35,70 M65,30 L80,30 L80,70 L65,70" />
+        <circle cx="50" cy="50" r="8" fill="#E60012" />
+      </svg>
+    )
+  },
+  {
+    link: "#work",
+    text: "CREATIVE MOTION SYSTEMS",
+    marqueeBgColor: "#E60012",
+    marqueeTextColor: "#ffffff",
+    image: (
+      <svg viewBox="0 0 100 100" fill="none" stroke="#E60012" strokeWidth="4" className="w-10 h-10">
+        <path d="M10,50 Q30,10 50,50 T90,50" />
+        <circle cx="50" cy="50" r="8" fill="#FFD400" />
+        <line x1="50" y1="15" x2="50" y2="85" strokeDasharray="3 3" />
+      </svg>
+    )
+  },
+  {
+    link: "#work",
+    text: "HIGH PERFORMANCE CODES",
+    marqueeBgColor: "#FFD400",
+    marqueeTextColor: "#000000",
+    image: (
+      <svg viewBox="0 0 100 100" fill="none" stroke="#FFD400" strokeWidth="4" className="w-10 h-10">
+        <path d="M50,10 L25,55 L45,55 L35,90 L75,45 L55,45 Z" fill="#E60012" />
+      </svg>
+    )
+  },
+  {
+    link: "#about",
+    text: "STABLE COMPOSITION",
+    marqueeBgColor: "#E60012",
+    marqueeTextColor: "#ffffff",
+    image: (
+      <svg viewBox="0 0 100 100" fill="none" stroke="#E60012" strokeWidth="4" className="w-10 h-10">
+        <circle cx="50" cy="50" r="28" />
+        <line x1="15" y1="50" x2="85" y2="50" />
+        <line x1="50" y1="15" x2="50" y2="85" />
+        <rect x="40" y="40" width="20" height="20" stroke="#FFD400" />
+      </svg>
+    )
+  }
+]
 
 export default function Home() {
   return (
@@ -40,6 +95,17 @@ export default function Home() {
 
       {/* 3. ABOUT SECTION */}
       <About />
+
+      {/* FLOWING INTEL MENU SECTION */}
+      <section className="border-t-4 border-b-4 border-black relative z-10">
+        <FlowingMenu
+          items={flowingMenuItems}
+          bgColor="#141414"
+          textColor="#ffffff"
+          borderColor="#000000"
+          speed={12}
+        />
+      </section>
 
       {/* 4. CONTACT SECTION */}
       <Contact />
