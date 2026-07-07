@@ -7,6 +7,7 @@ import About from "../components/About"
 import Contact from "../components/Contact"
 
 // Dynamically import below-the-fold interactive works section
+
 const Works = dynamic(() => import("../components/Works"), {
   ssr: true,
   loading: () => <div className="min-h-screen bg-black" />,
