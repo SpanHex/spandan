@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar"
 import Hero from "../components/Hero"
 import ScrollVelocity from "../components/ScrollVelocity"
 import FlowingMenu from "../components/FlowingMenu"
+import Preloader from "../components/Preloader"
 import About from "../components/About"
 import Contact from "../components/Contact"
 
@@ -72,6 +73,9 @@ const flowingMenuItems = [
 export default function Home() {
   return (
     <main className="min-h-screen bg-white text-black overflow-hidden relative selection:bg-comic-yellow selection:text-black animate-page-fade-in">
+      {/* 0. STARTUP PRELOADER */}
+      <Preloader />
+
       {/* Pinned Navigation */}
       <Navbar />
 
