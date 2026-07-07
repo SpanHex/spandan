@@ -1,4 +1,6 @@
-import React from "react"
+"use client"
+
+import React, { useState } from "react"
 import dynamic from "next/dynamic"
 
 import Navbar from "../components/Navbar"
@@ -71,10 +73,12 @@ const flowingMenuItems = [
 ]
 
 export default function Home() {
+  const [preloaderActive, setPreloaderActive] = useState(true);
+
   return (
     <main className="min-h-screen bg-white text-black overflow-hidden relative selection:bg-comic-yellow selection:text-black animate-page-fade-in">
       {/* 0. STARTUP PRELOADER */}
-      <Preloader />
+      <Preloader onComplete={() => setPreloaderActive(false)} />
 
       {/* Pinned Navigation */}
       <Navbar />
@@ -83,33 +87,41 @@ export default function Home() {
       <Hero />
 
       {/* SCROLL VELOCITY BIO DIVIDER */}
-      <div className="py-6 sm:py-10 bg-black text-white border-t-4 border-b-4 border-black overflow-hidden relative skew-y-[-2deg] my-8 sm:my-12 z-20 shadow-comic-solid-red">
-        <ScrollVelocity
-          texts={[
-            "SPANDAN UPAMANYU // CREATIVE DEVELOPER // 60 FPS INTERFACES // SWISS REBEL //",
-            "HEAVY-DUTY FRONTEND // STABLE ENGINE // BOLD GEOMETRY // NO TEMPLATES //"
-          ]}
-          velocity={60}
-          className="font-archivo font-black text-[clamp(1.75rem,5.5vw,3.75rem)] tracking-tighter uppercase text-white/90 select-none px-4"
-        />
-      </div>
+      {!preloaderActive && (
+        <div className="py-6 sm:py-10 bg-black text-white border-t-4 border-b-4 border-black overflow-hidden relative skew-y-[-2deg] my-8 sm:my-12 z-20 shadow-comic-solid-red animate-page-fade-in">
+          <ScrollVelocity
+            texts={[
+              "SPANDAN UPAMANYU // CREATIVE DEVELOPER // 60 FPS INTERFACES // SWISS REBEL //",
+              "HEAVY-DUTY FRONTEND // STABLE ENGINE // BOLD GEOMETRY // NO TEMPLATES //"
+            ]}
+            velocity={60}
+            className="font-archivo font-black text-[clamp(1.75rem,5.5vw,3.75rem)] tracking-tighter uppercase text-white/90 select-none px-4"
+          />
+        </div>
+      )}
 
       {/* 2. REDESIGNED WORKS / PORTFOLIO SECTION */}
-      <Works />
+      {!preloaderActive ? (
+        <Works />
+      ) : (
+        <div className="min-h-[50vh] bg-black" />
+      )}
 
       {/* 3. ABOUT SECTION */}
       <About />
 
       {/* FLOWING INTEL MENU SECTION */}
-      <section className="border-t-4 border-b-4 border-black relative z-10">
-        <FlowingMenu
-          items={flowingMenuItems}
-          bgColor="#141414"
-          textColor="#ffffff"
-          borderColor="#000000"
-          speed={12}
-        />
-      </section>
+      {!preloaderActive && (
+        <section className="border-t-4 border-b-4 border-black relative z-10 animate-page-fade-in">
+          <FlowingMenu
+            items={flowingMenuItems}
+            bgColor="#141414"
+            textColor="#ffffff"
+            borderColor="#000000"
+            speed={12}
+          />
+        </section>
+      )}
 
       {/* 4. CONTACT SECTION */}
       <Contact />

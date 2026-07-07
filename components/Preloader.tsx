@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react"
 import CountUp from "./CountUp"
 
-export default function Preloader() {
+export default function Preloader({ onComplete }: { onComplete?: () => void }) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [shouldRender, setShouldRender] = useState(true)
 
@@ -22,6 +22,9 @@ export default function Preloader() {
     // Remove the preloader from the DOM after the animation completes
     const timer = setTimeout(() => {
       setShouldRender(false)
+      if (onComplete) {
+        onComplete()
+      }
     }, 600) // matches the transition duration (600ms)
     return () => clearTimeout(timer)
   }
